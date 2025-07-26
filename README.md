@@ -1,5 +1,7 @@
 # Blazor AI PDF Search Demo
 
+![dotnet](https://github.com/aherrick/BlazorBYOD/actions/workflows/dotnet.yml/badge.svg)
+
 Showcase for Azure AI Search + Azure OpenAI with PDF upload and search.  
 Minimal UI, backend tech demo only.
 
