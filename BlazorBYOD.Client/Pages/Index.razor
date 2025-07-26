@@ -5,41 +5,48 @@
 @using System.Text.RegularExpressions
 @inject HttpClient Http
 
-<button @onclick="ResetIndex">Reset Index</button>
+<div class="container my-4">
 
-<h3>Upload PDFs</h3>
-<InputFile OnChange="UploadPdfs" accept=".pdf" multiple />
-<ul>
-    @foreach (var status in uploadStatuses)
-    {
-        <li>@status</li>
-    }
-</ul>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="mb-0">Upload PDFs</h3>
+        <button class="btn btn-outline-secondary btn-sm" @onclick="ResetIndex">Reset Index</button>
+    </div>
 
-<hr />
-
-<h3>Chat</h3>
-
-<ul>
-    @for (int i = 0; i < chatHistory.Count; i++)
-    {
-        var msg = chatHistory[i];
-        if (msg.StartsWith("A: "))
+    <InputFile OnChange="UploadPdfs" accept=".pdf" multiple class="form-control mb-2" />
+    <ul class="mb-4 ps-3">
+        @foreach (var status in uploadStatuses)
         {
-            <li>
-                @((MarkupString)Markdown.ToHtml(ReplaceCitations(msg.Substring(3))))
-             </li>
+            <li>@status</li>
         }
-        else
+    </ul>
+
+    <hr />
+
+    <h3>Chat</h3>
+    <ul class="list-group mb-3">
+        @for (int i = 0; i < chatHistory.Count; i++)
         {
-            <li>@msg</li>
+            var msg = chatHistory[i];
+            if (msg.StartsWith("A: "))
+            {
+                <li class="list-group-item bg-light">
+                    @((MarkupString)Markdown.ToHtml(ReplaceCitations(msg.Substring(3))))
+                </li>
+            }
+            else
+            {
+                <li class="list-group-item fw-bold">
+                    @msg
+                </li>
+            }
         }
-    }
-</ul>
+    </ul>
 
-
-<input @bind="currentMessage" @bind:event="oninput" @onkeydown="OnEnter" placeholder="Type your message..." style="width:300px" />
-<button @onclick="SendChat">Send</button>
+    <div class="input-group mb-3" style="max-width: 500px;">
+        <input class="form-control" @bind="currentMessage" @bind:event="oninput" @onkeydown="OnEnter" placeholder="Type your message..." />
+        <button class="btn btn-primary" @onclick="SendChat" type="button">Send</button>
+    </div>
+</div>
 
 @code {
 
@@ -53,7 +60,6 @@
             $"{m.Groups[3].Value} [{m.Groups[1].Value}, p.{m.Groups[2].Value}]"
         );
     }
-
 
     private List<string> uploadStatuses = new();
     private List<string> chatHistory = new();
@@ -93,7 +99,6 @@
         var content = new StringContent(JsonSerializer.Serialize(currentMessage), System.Text.Encoding.UTF8, "application/json");
         using var request = new HttpRequestMessage(HttpMethod.Post, "/api/chat") { Content = content };
         request.SetBrowserResponseStreamingEnabled(true);
-
 
         using var response = await Http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
 
