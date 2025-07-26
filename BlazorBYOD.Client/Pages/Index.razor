@@ -1,0 +1,124 @@
+﻿@page "/"
+@using Markdig
+@using Microsoft.AspNetCore.Components.Forms
+@using System.Text.Json
+@using System.Text.RegularExpressions
+@inject HttpClient Http
+
+<button @onclick="ResetIndex">Reset Index</button>
+
+<h3>Upload PDFs</h3>
+<InputFile OnChange="UploadPdfs" accept=".pdf" multiple />
+<ul>
+    @foreach (var status in uploadStatuses)
+    {
+        <li>@status</li>
+    }
+</ul>
+
+<hr />
+
+<h3>Chat</h3>
+
+<ul>
+    @for (int i = 0; i < chatHistory.Count; i++)
+    {
+        var msg = chatHistory[i];
+        if (msg.StartsWith("A: "))
+        {
+            <li>
+                @((MarkupString)Markdown.ToHtml(ReplaceCitations(msg.Substring(3))))
+             </li>
+        }
+        else
+        {
+            <li>@msg</li>
+        }
+    }
+</ul>
+
+
+<input @bind="currentMessage" @bind:event="oninput" @onkeydown="OnEnter" placeholder="Type your message..." style="width:300px" />
+<button @onclick="SendChat">Send</button>
+
+@code {
+
+    private static readonly Regex CitationRegex = new(
+    @"<citation filename='([^']+)' page_number='([^']+)'>(.*?)<\/citation>",
+    RegexOptions.IgnoreCase | RegexOptions.Singleline);
+
+    private string ReplaceCitations(string markdown)
+    {
+        return CitationRegex.Replace(markdown, m =>
+            $"{m.Groups[3].Value} [{m.Groups[1].Value}, p.{m.Groups[2].Value}]"
+        );
+    }
+
+
+    private List<string> uploadStatuses = new();
+    private List<string> chatHistory = new();
+    private string currentMessage = "";
+
+    private async Task UploadPdfs(InputFileChangeEventArgs e)
+    {
+        uploadStatuses.Clear();
+
+        foreach (var file in e.GetMultipleFiles())
+        {
+            uploadStatuses.Add($"{file.Name}: Uploading...");
+            StateHasChanged();
+
+            using var content = new MultipartFormDataContent();
+            content.Add(new StreamContent(file.OpenReadStream(long.MaxValue)), "file", file.Name);
+
+            var resp = await Http.PostAsync("/api/ingest", content);
+            uploadStatuses[^1] = $"{file.Name}: Upload" + (resp.IsSuccessStatusCode ? " complete" : " failed");
+            StateHasChanged();
+        }
+    }
+
+    private async Task ResetIndex()
+    {
+        await Http.PostAsync("/api/reset", null);
+    }
+
+    private async Task SendChat()
+    {
+        if (string.IsNullOrWhiteSpace(currentMessage)) return;
+
+        chatHistory.Add($"Q: {currentMessage}");
+        chatHistory.Add("A: "); // Placeholder for answer
+        StateHasChanged();
+
+        var content = new StringContent(JsonSerializer.Serialize(currentMessage), System.Text.Encoding.UTF8, "application/json");
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/chat") { Content = content };
+        request.SetBrowserResponseStreamingEnabled(true);
+
+
+        using var response = await Http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+        var stream = await response.Content.ReadAsStreamAsync();
+        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+        await foreach (var chunk in JsonSerializer.DeserializeAsyncEnumerable<AiResponseDto>(stream, options))
+        {
+            if (chunk?.Text != null)
+            {
+                // Append each chunk to the last answer
+                chatHistory[^1] += chunk.Text;
+                StateHasChanged();
+            }
+        }
+
+        currentMessage = "";
+        StateHasChanged();
+    }
+
+    private void OnEnter(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            _ = SendChat();
+        }
+    }
+}

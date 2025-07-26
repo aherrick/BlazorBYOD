@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+	<PropertyGroup>
+		<TargetFramework>net9.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<UserSecretsId>0a007212-37c3-4d1f-9cdf-2f8c9e356398</UserSecretsId>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Azure.AI.OpenAI" Version="2.2.0-beta.5" />
+
+		<PackageReference Include="Microsoft.Extensions.AI" Version="9.7.1" />
+
+		<PackageReference Include="Microsoft.Extensions.AI.OpenAI" Version="9.7.1-preview.1.25365.4" />
+
+		<PackageReference Include="Microsoft.Extensions.VectorData.Abstractions" Version="9.7.0" />
+		<PackageReference Include="Microsoft.SemanticKernel.Connectors.AzureAISearch" Version="1.61.0-preview" />
+
+		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="9.0.7" />
+
+		<PackageReference Include="PdfPig" Version="0.1.11-alpha-20250726-50f87" />
+		<PackageReference Include="System.Linq.Async" Version="6.0.3" />
+
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\BlazorBYOD.Client\BlazorBYOD.Client.csproj" />
+		<ProjectReference Include="..\BlazorBYOD.Shared\BlazorBYOD.Shared.csproj" />
+	</ItemGroup>
+
+</Project>
