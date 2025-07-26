@@ -92,7 +92,7 @@
     {
         if (string.IsNullOrWhiteSpace(currentMessage)) return;
 
-        chatHistory.Add($"Q: {currentMessage}");
+        chatHistory.Add(currentMessage);
         chatHistory.Add("A: "); // Placeholder for answer
         StateHasChanged();
 
