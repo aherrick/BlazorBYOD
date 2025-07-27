@@ -2,7 +2,7 @@
 
 ![dotnet](https://github.com/aherrick/BlazorBYOD/actions/workflows/dotnet.yml/badge.svg)
 
-Showcase for Azure AI Search + Azure OpenAI with PDF upload and search.  
+Showcase for Azure AI Search + Azure OpenAI with **PDF, DOCX, and TXT file upload** and search.
 
 ## Configuration
 
