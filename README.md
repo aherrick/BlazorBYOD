@@ -1,9 +1,8 @@
-# Blazor AI PDF Search Demo
+# Blazor AI Bring Your Own Data Search Demo
 
 ![dotnet](https://github.com/aherrick/BlazorBYOD/actions/workflows/dotnet.yml/badge.svg)
 
 Showcase for Azure AI Search + Azure OpenAI with PDF upload and search.  
-Minimal UI, backend tech demo only.
 
 ## Configuration
 
@@ -20,8 +19,8 @@ Minimal UI, backend tech demo only.
       "AzureAI": {
         "SearchEndpoint": "https://your-search-resource.search.windows.net",
         "SearchApiKey": "your-search-api-key",
-        "OpenAIEndpoint": "https://your-openai-resource.openai.azure.com/",
-        "OpenAIApiKey": "your-openai-api-key",
+        "AIEndpoint": "https://your-openai-resource.openai.azure.com/",
+        "AIApiKey": "your-openai-api-key",
         "ChatDeploymentName": "gpt-4o",
         "EmbeddingDeploymentName": "text-embedding-3-small"
       }
