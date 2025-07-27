@@ -38,62 +38,63 @@ public static class ApiEndpoints
                 var file = form.Files["file"];
                 var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
 
-                IEnumerable<(string Text, int PageNumber)> chunks;
+                IEnumerable<(string Text, int PageNumber)> chunks = null;
 
-                if (extension == ".pdf")
+                if (extension == ".txt")
                 {
-                    using var memoryStream = new MemoryStream();
-                    await file.CopyToAsync(memoryStream);
-                    memoryStream.Position = 0;
-
-                    using var document = PdfDocument.Open(memoryStream);
-                    chunks = document.GetPages().Select(p => (p.Text, PageNumber: p.Number));
-                }
-                else if (extension == ".docx")
-                {
-                    using var memoryStream = new MemoryStream();
-                    await file.CopyToAsync(memoryStream);
-                    memoryStream.Position = 0;
-
-                    using var wordDoc = WordprocessingDocument.Open(memoryStream, false);
-                    var body = wordDoc.MainDocumentPart?.Document?.Body;
-
-                    var text =
-                        body == null
-                            ? ""
-                            : string.Join(
-                                "\n",
-                                body.Descendants<DocumentFormat.OpenXml.Wordprocessing.Text>()
-                                    .Select(t => t.Text)
-                            );
-
-                    chunks = [(Text: text.Trim(), PageNumber: 1)];
-                }
-                else
-                {
-                    // *.txt
                     using var reader = new StreamReader(file.OpenReadStream());
                     var text = await reader.ReadToEndAsync();
                     chunks = [(Text: text.Trim(), PageNumber: 1)];
                 }
-
-                foreach (var (text, pageNumber) in chunks)
+                else if (extension == ".pdf" || extension == ".docx")
                 {
-                    if (string.IsNullOrWhiteSpace(text))
-                        continue;
+                    using var memoryStream = new MemoryStream();
+                    await file.CopyToAsync(memoryStream);
+                    memoryStream.Position = 0;
 
-                    var embedding = await embeddingClient.GenerateAsync(text);
-
-                    var ingestedChunk = new IngestedChunk
+                    if (extension == ".pdf")
                     {
-                        Key = Guid.NewGuid().ToString(),
-                        DocumentId = file.FileName,
-                        PageNumber = pageNumber,
-                        Text = text,
-                        Vector = embedding.Vector,
-                    };
+                        using var document = PdfDocument.Open(memoryStream);
+                        chunks = document.GetPages().Select(p => (p.Text, PageNumber: p.Number));
+                    }
+                    else // .docx
+                    {
+                        using var wordDoc = WordprocessingDocument.Open(memoryStream, false);
+                        var body = wordDoc.MainDocumentPart?.Document?.Body;
 
-                    await aISearchCollection.UpsertAsync(ingestedChunk);
+                        var text =
+                            body == null
+                                ? ""
+                                : string.Join(
+                                    "\n",
+                                    body.Descendants<DocumentFormat.OpenXml.Wordprocessing.Text>()
+                                        .Select(t => t.Text)
+                                );
+
+                        chunks = [(Text: text.Trim(), PageNumber: 1)];
+                    }
+                }
+
+                if (chunks != null)
+                {
+                    foreach (var (text, pageNumber) in chunks)
+                    {
+                        if (string.IsNullOrWhiteSpace(text))
+                            continue;
+
+                        var embedding = await embeddingClient.GenerateAsync(text);
+
+                        var ingestedChunk = new IngestedChunk
+                        {
+                            Key = Guid.NewGuid().ToString(),
+                            DocumentId = file.FileName,
+                            PageNumber = pageNumber,
+                            Text = text,
+                            Vector = embedding.Vector,
+                        };
+
+                        await aISearchCollection.UpsertAsync(ingestedChunk);
+                    }
                 }
 
                 return Results.Ok();
